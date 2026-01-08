@@ -1,6 +1,7 @@
 import './style.css';
 import javascriptLogo from '../public/JavaScript.svg';
 import ifcLogo from '../public/ifc.png';
+import * as webifc from 'web-ifc';
 
 document.querySelector('#app').innerHTML = `
   <div>
@@ -31,5 +32,48 @@ document.querySelector('#app').innerHTML = `
     <p class="read-the-docs">
       Click the logos to learn more about IFC and JavaScript
     </p>
+
+    <div class="upload-box">
+      <label for="ifc-input" class="upload-label">
+        📂 Choose an IFC file
+      </label>
+      <input
+        id="ifc-input"
+        type="file"
+        accept=".ifc"
+      />
+      <span class="file-hint">Supported format: .ifc</span>
+    </div>
   </div>
 `;
+
+const input = document.getElementById('ifc-input');
+
+input.addEventListener('change', async (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  console.log(`[IFC file] name: ${file.name} - size: ${file.size}`);
+
+  const buffer = await file.arrayBuffer();
+  const ifcData = new Uint8Array(buffer);
+  console.log("[IFC DATA]: ", ifcData);
+
+  const ifcApi = new webifc.IfcAPI();
+  ifcApi.SetWasmPath("../node_modules/web-ifc/");
+  // ifcApi.SetWasmPath("https://unpkg.com/web-ifc@0.0.74/");
+
+  await ifcApi.Init();
+  const modelId = ifcApi.OpenModel(ifcData);
+  const maxId = ifcApi.GetMaxExpressID(modelId);
+
+  console.log("[IFC Model Opened]: ", modelId, maxId);
+
+  setTimeout(()=>{ 
+    ifcApi.CloseModel(modelId);
+
+    const maxId = ifcApi.GetMaxExpressID(modelId);
+
+    console.log("[IFC Model Closed]: ", maxId);
+  }, 2000);
+});
